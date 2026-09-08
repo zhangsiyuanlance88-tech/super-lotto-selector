@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>超级大乐透智能选号</title>
+<style>
+:root { --red: #C41230; --gold: #D4A843; --green: #2e7d32; --bg: #f0f2f5; --card: #fff; --text: #333; --text2: #666; --border: #e8e8e8; --radius: 10px; --shadow: 0 2px 12px rgba(0,0,0,.08); }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+.container { max-width: 720px; margin: 0 auto; padding: 12px; }
+header { background: linear-gradient(135deg, #C41230 0%, #a00d26 100%); color: #fff; text-align: center; padding: 20px 16px; border-radius: var(--radius); margin-bottom: 12px; box-shadow: var(--shadow); }
+header h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+header p { font-size: 13px; opacity: .85; margin-top: 4px; }
+.status-bar { background: var(--card); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; box-shadow: var(--shadow); font-size: 13px; }
+.status-bar .info { color: var(--text2); }
+.status-bar .info strong { color: var(--red); }
+.btn { border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; cursor: pointer; font-weight: 600; transition: all .2s; }
+.btn-primary { background: var(--red); color: #fff; }
+.btn-outline { background: #fff; color: var(--red); border: 1.5px solid var(--red); }
+.btn-outline:hover { background: #fff5f5; }
+.btn-gold { background: linear-gradient(135deg, #D4A843, #b8922e); color: #fff; font-size: 15px; padding: 10px 28px; }
+.btn-gold:hover { opacity: .9; transform: translateY(-1px); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-xs { padding: 3px 10px; font-size: 11px; border-radius: 4px; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #1b5e20; }
+.btn-danger { background: #d32f2f; color: #fff; }
+.btn-danger:hover { background: #b71c1c; }
+.tabs { display: flex; gap: 0; margin-bottom: 12px; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.tab { flex: 1; text-align: center; padding: 10px 4px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: var(--text2); transition: all .2s; position: relative; }
+.tab.active { color: var(--red); background: #fff5f5; }
+.tab.active::after { content: ''; position: absolute; bottom: 0; left: 15%; right: 15%; height: 3px; background: var(--red); border-radius: 3px 3px 0 0; }
+.panel { display: none; }
+.panel.active { display: block; }
+.card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.card h3 { font-size: 16px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #f0f0f0; display: flex; align-items: center; gap: 8px; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 400px; }
+th, td { padding: 8px 6px; text-align: center; border-bottom: 1px solid var(--border); }
+th { background: #fafafa; font-weight: 600; color: var(--text2); font-size: 12px; white-space: nowrap; }
+tr.hot td { background: #fff8f0; }
+tr.hot td:first-child { color: var(--red); font-weight: 700; }
+.hot-badge { display: inline-block; background: var(--red); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
+.balls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.ball { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.ball.front { background: linear-gradient(135deg, #C41230, #e0455b); }
+.ball.back { background: linear-gradient(135deg, #1a6fb5, #3b8fd4); }
+.ball.hit { box-shadow: 0 0 0 3px #2e7d32, 0 2px 6px rgba(0,0,0,.2); }
+.ball.miss { opacity: .35; }
+.ball-divider { font-size: 18px; color: #999; font-weight: 300; margin: 0 2px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+.control-group { display: flex; align-items: center; gap: 6px; }
+.control-group label { font-size: 13px; color: var(--text2); white-space: nowrap; }
+.control-group select { padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 14px; background: #fff; cursor: pointer; }
+.control-group select:focus { outline: none; border-color: var(--red); }
+.result-card { background: linear-gradient(135deg, #fdf8f0, #fff); border: 1.5px solid #e8d5a3; border-radius: var(--radius); padding: 20px 16px; margin-bottom: 10px; text-align: center; position: relative; }
+.result-card .ticket-no { font-size: 12px; color: var(--gold); font-weight: 600; margin-bottom: 10px; }
+.result-card .save-btn { position: absolute; top: 10px; right: 12px; }
+.weight-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 8px; background: #fafafa; border-radius: 6px; }
+.weight-row .w-label { width: 80px; font-size: 13px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+.weight-row .w-desc { font-size: 11px; color: var(--text2); width: 60px; flex-shrink: 0; text-align: right; }
+.weight-row input[type=range] { flex: 1; min-width: 80px; accent-color: var(--red); }
+.weight-row .w-val { width: 36px; text-align: center; font-size: 14px; font-weight: 700; color: var(--red); flex-shrink: 0; }
+.weight-summary { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.weight-summary .total { font-size: 15px; font-weight: 700; }
+.weight-summary .total.ok { color: var(--green); }
+.weight-summary .total.err { color: var(--red); }
+.history-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+.history-item .hi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+.history-item .hi-date { font-size: 12px; color: var(--text2); }
+.history-item .hi-balls { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.history-item .hi-ball { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; }
+.history-item .hi-ball.front { background: linear-gradient(135deg, #C41230, #e0455b); }
+.history-item .hi-ball.back { background: linear-gradient(135deg, #1a6fb5, #3b8fd4); }
+.history-item .hi-ball.hit { box-shadow: 0 0 0 2.5px #2e7d32; }
+.history-item .hi-ball.miss { opacity: .3; }
+.history-item .hi-result { font-size: 13px; font-weight: 600; margin-top: 6px; }
+.history-item .hi-result.win { color: var(--red); }
+.history-item .hi-result.lose { color: var(--text2); }
+.history-item .hi-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.history-empty { text-align: center; padding: 40px 20px; color: var(--text2); font-size: 14px; }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: var(--radius); padding: 20px; max-width: 400px; width: 100%; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+.modal h3 { font-size: 16px; margin-bottom: 14px; }
+.modal .input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.modal .input-row label { font-size: 13px; color: var(--text2); width: 50px; flex-shrink: 0; }
+.modal .input-row input { flex: 1; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 14px; text-align: center; }
+.modal .input-row input:focus { outline: none; border-color: var(--red); }
+.modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.modal .hint { font-size: 11px; color: var(--text2); margin-bottom: 10px; }
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.legend { display: flex; gap: 16px; font-size: 12px; color: var(--text2); margin-top: 8px; flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 4px; }
+.legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.legend .dot.red { background: var(--red); }
+.legend .dot.blue { background: #1a6fb5; }
+.legend .dot.green { background: var(--green); }
+footer { text-align: center; padding: 20px; font-size: 12px; color: #aaa; line-height: 1.8; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.refresh-hint { font-size: 12px; color: #999; margin-top: 6px; display: none; }
+.latest-draw { background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; box-shadow: var(--shadow); color: #fff; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.latest-draw .ld-label { font-size: 13px; opacity: .7; white-space: nowrap; }
+.latest-draw .ld-period { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+.latest-draw .ld-balls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.latest-draw .ld-ball { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; }
+.latest-draw .ld-ball.front { background: linear-gradient(135deg, #C41230, #e0455b); }
+.latest-draw .ld-ball.back { background: linear-gradient(135deg, #1a6fb5, #3b8fd4); }
+.latest-draw .ld-divider { font-size: 16px; color: #666; margin: 0 2px; }
+.latest-draw .ld-date { font-size: 12px; opacity: .6; margin-left: auto; }
+.analysis-layout { display: flex; gap: 12px; flex-wrap: wrap; }
+.analysis-layout .trend-col { flex: 0 0 100%; }
+.analysis-layout .heat-col { flex: 1 1 100%; }
+@media (min-width: 900px) {
+  .analysis-layout .trend-col { flex: 0 0 340px; }
+  .analysis-layout .heat-col { flex: 1; min-width: 0; }
+}
+.trend-card { background: var(--card); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.trend-card h3 { font-size: 15px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #f0f0f0; }
+.trend-svg { width: 100%; overflow-x: auto; }
+.trend-svg svg { display: block; }
+.trend-svg .col-header { cursor: pointer; transition: fill .2s; }
+.trend-svg .col-header:hover { fill: #C41230; font-weight: 700; }
+.trend-svg .b-col-header { cursor: pointer; transition: fill .2s; }
+.trend-svg .b-col-header:hover { fill: #1a6fb5; font-weight: 700; }
+.num-detail-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
+.num-detail-modal.show { display: flex; }
+.num-detail-content { background: #fff; border-radius: var(--radius); padding: 24px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+.num-detail-content h3 { font-size: 18px; margin-bottom: 16px; }
+.num-detail-content .nd-badge { display: inline-block; width: 40px; height: 40px; border-radius: 50%; color: #fff; text-align: center; line-height: 40px; font-size: 18px; font-weight: 700; margin-right: 8px; vertical-align: middle; }
+.num-detail-content .nd-badge.front { background: linear-gradient(135deg, #C41230, #e0455b); }
+.num-detail-content .nd-badge.back { background: linear-gradient(135deg, #1a6fb5, #3b8fd4); }
+.num-detail-content .nd-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.num-detail-content .nd-stat { background: #fafafa; padding: 10px; border-radius: 6px; text-align: center; }
+.num-detail-content .nd-stat .nd-val { font-size: 20px; font-weight: 700; color: var(--red); }
+.num-detail-content .nd-stat .nd-lbl { font-size: 11px; color: var(--text2); }
+.num-detail-content .nd-chart { width: 100%; height: 120px; margin-bottom: 8px; }
+.num-detail-content .nd-chart-label { font-size: 11px; color: var(--text2); text-align: center; margin-bottom: 12px; }
+.num-detail-content .nd-close { display: block; margin: 16px auto 0; }
+.heat-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+.heat-grid .heat-block { flex: 1 1 280px; min-width: 260px; }
+.heat-block .card { height: 100%; }
+.heat-block .card h3 { font-size: 14px; }
+.heat-badge-100 { background: #e65100; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 6px; }
+.heat-badge-all { background: #4527a0; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 6px; }
+.export-bar { background: var(--card); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 12px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+.export-bar .exp-label { color: var(--text2); }
+@media (max-width: 480px) {
+  .container { padding: 8px; } header h1 { font-size: 19px; }
+  .tab { font-size: 11px; padding: 10px 2px; }
+  .ball { width: 36px; height: 36px; font-size: 15px; }
+  .controls { flex-direction: column; align-items: stretch; }
+  .btn-gold { width: 100%; } th, td { padding: 6px 4px; font-size: 12px; }
+  .weight-row { flex-wrap: wrap; }
+  .weight-row .w-label { width: 65px; font-size: 12px; }
+  .weight-row .w-desc { width: 50px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header><h1>超级大乐透 · 智能选号</h1><p>热门号 1-3 个 + 冷门号补足 · 降低共享奖金风险</p></header>
+<div class="latest-draw" id="latestDraw"><span class="ld-label">最新开奖</span><span class="ld-period" id="ldPeriod">--</span><span class="ld-balls" id="ldBalls"></span><span class="ld-date" id="ldDate"></span></div>
+<div class="status-bar"><div class="info">数据范围：<strong id="dataRange">--</strong>（<strong id="dataCount">0</strong> 期）</div><button class="btn btn-outline btn-sm" onclick="refreshData()" id="refreshBtn">刷新数据</button></div>
+<div class="export-bar" id="exportBar"><span class="exp-label">全量数据：<strong id="expCount">0</strong> 期</span><button class="btn btn-outline btn-sm" onclick="exportCSV()">导出 CSV</button></div>
+<div class="refresh-hint" id="refreshHint">后端服务未连接，请先启动 server.ps1</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('trend')">走势图</button>
+  <button class="tab" onclick="switchTab('analysis')">走势分析</button>
+  <button class="tab" onclick="switchTab('weights')">权重设置</button>
+  <button class="tab" onclick="switchTab('selection')">智能选号</button>
+  <button class="tab" onclick="switchTab('history')">选号记录</button>
+</div>
+
+<div class="panel active" id="trendPanel">
+<div class="trend-card"><h3>最近 30 期走势图</h3><div class="trend-svg" id="trendChart"></div></div>
+</div>
+
+<div class="panel" id="analysisPanel">
+<div class="heat-grid">
+  <div class="heat-block"><div class="card"><h3>前区 TOP10<span class="heat-badge-100">近100期</span></h3><div class="table-wrap"><table><thead><tr><th>排名</th><th>号码</th><th>频次</th><th>近10期</th><th>遗漏</th><th>连号</th><th>走势</th><th>热度分</th></tr></thead><tbody id="front100Body"></tbody></table></div></div></div>
+<div class="heat-block"><div class="card"><h3>前区 TOP10<span class="heat-badge-all">全部2920期</span></h3><div class="table-wrap"><table><thead><tr><th>排名</th><th>号码</th><th>频次</th><th>近10期</th><th>遗漏</th><th>连号</th><th>走势</th><th>热度分</th></tr></thead><tbody id="frontAllBody"></tbody></table></div></div></div>
+</div>
+<div class="heat-grid">
+  <div class="heat-block"><div class="card"><h3>后区 TOP5<span class="heat-badge-100">近100期</span></h3><div class="table-wrap"><table><thead><tr><th>排名</th><th>号码</th><th>频次</th><th>近10期</th><th>遗漏</th><th>热度分</th></tr></thead><tbody id="back100Body"></tbody></table></div></div></div>
+  <div class="heat-block"><div class="card"><h3>后区 TOP5<span class="heat-badge-all">全部2920期</span></h3><div class="table-wrap"><table><thead><tr><th>排名</th><th>号码</th><th>频次</th><th>近10期</th><th>遗漏</th><th>热度分</th></tr></thead><tbody id="backAllBody"></tbody></table></div></div></div>
+</div>
+<div class="legend"><span><span class="dot red"></span> 前区</span><span><span class="dot blue"></span> 后区</span><span id="weightFormula"></span></div>
+</div>
+
+<div class="panel" id="weightsPanel">
+<div class="card">
+  <h3>热度评分权重调整</h3>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:12px">拖动滑块调整各维度权重，总和须为 100%。修改后自动重新分析。</p>
+  <div id="weightSliders"></div>
+  <div class="weight-summary">
+    <span>合计：<span class="total ok" id="weightTotal">100%</span></span>
+    <button class="btn btn-outline btn-sm" onclick="resetWeights()">恢复默认</button>
+  </div>
+</div>
+</div>
+
+<div class="panel" id="selectionPanel">
+<div class="card"><h3>选号设置</h3>
+<div class="controls">
+<div class="control-group"><label>数据源：</label><select id="dataSource"><option value="100">近100期</option><option value="all">全部期次</option></select></div>
+<div class="control-group"><label>前区热门号：</label><select id="hotFrontCount"><option value="1">1 个</option><option value="2" selected>2 个</option><option value="3">3 个</option></select></div>
+<div class="control-group"><label>后区热门号：</label><select id="hotBackCount"><option value="0">0 个</option><option value="1">1 个</option></select></div>
+<div class="control-group"><label>生成注数：</label><select id="ticketCount"><option value="1">1 注</option><option value="5" selected>5 注</option><option value="10">10 注</option></select></div>
+</div>
+<button class="btn btn-gold" onclick="generateTickets()">生成号码</button></div>
+<div id="resultsContainer"></div>
+</div>
+
+<div class="panel" id="historyPanel">
+<div class="card">
+  <h3>选号记录</h3>
+  <div id="historyContainer"><div class="history-empty">暂无选号记录<br><small>在「智能选号」中生成号码后点击「保存」即可记录</small></div></div>
+  <div style="margin-top:12px;text-align:right" id="clearHistoryWrap" hidden>
+    <button class="btn btn-danger btn-sm" onclick="clearHistory()">清空所有记录</button>
+  </div>
+</div>
+</div>
+
+<footer>数据来源：中国体彩网 lottery.gov.cn<br>以上号码仅供娱乐参考，请理性购彩，量力而行</footer>
+</div>
+
+<div class="modal-overlay" id="checkModal">
+  <div class="modal">
+    <h3>输入开奖号码进行核对</h3>
+    <p class="hint" id="checkHint"></p>
+    <div class="input-row"><label>前区 5码</label><input type="text" id="checkFront" placeholder="例如：02 06 11 15 31" maxlength="20"></div>
+    <div class="input-row"><label>后区 2码</label><input type="text" id="checkBack" placeholder="例如：07 08" maxlength="8"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeCheckModal()">取消</button>
+      <button class="btn btn-green btn-sm" onclick="doCheck()">核对</button>
+    </div>
+  </div>
+</div>
+
+<div class="num-detail-modal" id="numDetailModal">
+  <div class="num-detail-content">
+    <h3 id="ndTitle"></h3>
+    <div class="nd-stats" id="ndStats"></div>
+    <div class="nd-chart-label">近 30 期遗漏 & 热度变化</div>
+    <div class="nd-chart" id="ndChart"></div>
+    <div class="nd-chart-label">热度评分构成</div>
+    <div class="nd-chart" id="ndScoreBar"></div>
+    <button class="btn btn-outline btn-sm nd-close" onclick="closeNumDetail()">关闭</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+let data = [];
+let analysis = null;
+const ANALYSIS_WINDOW = 100;
+const TREND_LOOKBACK = 5;
+const MC_SIMULATIONS = 10000;
+const SPECIAL_NUMS = new Set([6, 8, 16, 18, 28]);
+
+// ========== 权重管理 ==========
+const DEFAULT_WEIGHTS = { freq: 20, missing: 15, recent: 20, special: 10, consecutive: 10, trend: 25 };
+const WEIGHT_LABELS = { freq: '出现频次', missing: '遗漏回补', recent: '近期热度', special: '特殊号码', consecutive: '连号关联', trend: '走势追踪' };
+const WEIGHT_DESCS = { freq: '历史出现越多越热', missing: '长期未出博冷门', recent: '近10期频繁出现', special: '吉利号+生日号', consecutive: '连号被关注', trend: '序列延续+间隙补号' };
+const WEIGHT_ORDER = ['freq', 'missing', 'recent', 'special', 'consecutive', 'trend'];
+
+let weights = loadWeights();
+
+function loadWeights() {
+  try { const saved = localStorage.getItem('lotto_weights'); if (saved) { const w = JSON.parse(saved); if (w.freq != null && w.trend != null) return w; } } catch (e) {}
+  return { ...DEFAULT_WEIGHTS };
+}
+
+function saveWeights() {
+  localStorage.setItem('lotto_weights', JSON.stringify(weights));
+  analysis = null; analysis = analyze();
+  renderAnalysis(); updateWeightFormula();
+}
+
+function resetWeights() { weights = { ...DEFAULT_WEIGHTS }; saveWeights(); renderWeightSliders(); showToast('已恢复默认权重'); }
+
+function renderWeightSliders() {
+  let html = '';
+  for (const key of WEIGHT_ORDER) {
+    html += '<div class="weight-row"><span class="w-label">' + WEIGHT_LABELS[key] + '</span>';
+    html += '<input type="range" min="0" max="100" value="' + weights[key] + '" oninput="onWeightChange(\'' + key + '\', this.value)" id="slider_' + key + '">';
+    html += '<span class="w-val" id="val_' + key + '">' + weights[key] + '%</span>';
+    html += '<span class="w-desc">' + WEIGHT_DESCS[key] + '</span></div>';
+  }
+  document.getElementById('weightSliders').innerHTML = html;
+  updateWeightTotal();
+}
+
+function onWeightChange(key, val) {
+  weights[key] = parseInt(val);
+  document.getElementById('val_' + key).textContent = weights[key] + '%';
+  updateWeightTotal(); saveWeights();
+}
+
+function updateWeightTotal() {
+  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  const el = document.getElementById('weightTotal');
+  el.textContent = total + '%';
+  el.className = 'total ' + (total === 100 ? 'ok' : 'err');
+}
+
+function updateWeightFormula() {
+  const w = weights;
+  const f = '频次×' + (w.freq/100).toFixed(2) + ' + 遗漏×' + (w.missing/100).toFixed(2) + ' + 近期×' + (w.recent/100).toFixed(2) + ' + 特殊号×' + (w.special/100).toFixed(2) + ' + 连号×' + (w.consecutive/100).toFixed(2) + ' + 走势×' + (w.trend/100).toFixed(2);
+  document.getElementById('weightFormula').textContent = '热度分 = ' + f;
+}
+
+// ========== 核心分析（可指定窗口大小） ==========
+function analyzeWindow(dataSlice, windowSize) {
+  if (dataSlice.length === 0) return null;
+  const total = dataSlice.length;
+  const frontStats = {}, backStats = {};
+  for (let n = 1; n <= 35; n++) frontStats[n] = { freq: 0, lastIdx: -1, recent: 0, consecutive: 0, trendScore: 0 };
+  for (let n = 1; n <= 12; n++) backStats[n] = { freq: 0, lastIdx: -1, recent: 0, trendScore: 0 };
+
+  for (let i = 0; i < total; i++) {
+    const d = dataSlice[i];
+    for (const n of d.f) { frontStats[n].freq++; frontStats[n].lastIdx = i; }
+    for (const n of d.b) { backStats[n].freq++; backStats[n].lastIdx = i; }
+  }
+
+  const recentSlice = dataSlice.slice(-10);
+  for (const d of recentSlice) {
+    for (const n of d.f) frontStats[n].recent++;
+    for (const n of d.b) backStats[n].recent++;
+  }
+
+  for (const d of dataSlice) {
+    const sorted = [...d.f].sort((a, b) => a - b);
+    for (let i = 0; i < sorted.length - 1; i++) {
+      if (sorted[i + 1] - sorted[i] === 1) { frontStats[sorted[i]].consecutive++; frontStats[sorted[i + 1]].consecutive++; }
+    }
+  }
+
+  // ========== 走势追踪（Trend Following） ==========
+  // 检测最近TREND_LOOKBACK期的序列延续和间隙补号模式
+  const trendLookback = Math.min(TREND_LOOKBACK, total);
+  for (let n = 1; n <= 35; n++) {
+    let trendScore = 0;
+    // 模式1: 序列延续 - 最近两期出现 N-2, N-1 → 很多人会追 N
+    for (let i = 0; i < trendLookback - 1; i++) {
+      const d0 = dataSlice[i], d1 = dataSlice[i + 1];
+      if (d0.f.includes(n - 2) && d1.f.includes(n - 1)) trendScore += 1.0;
+      if (n >= 2 && d0.f.includes(n - 1) && d1.f.includes(n)) trendScore += 0.3;
+    }
+    // 模式2: 间隙补号 - 最近一期出现 N-1 和 N+1 → 很多人会补 N
+    for (let i = 0; i < trendLookback; i++) {
+      const d = dataSlice[i];
+      if (d.f.includes(n - 1) && d.f.includes(n + 1)) trendScore += 0.8;
+      if (n >= 2 && d.f.includes(n - 1) && d.f.includes(n + 1)) trendScore += 0.3;
+      // 模式3: 隔期补号 - 前一期有 N-1，前两期有 N+1 → 追 N
+      if (i < trendLookback - 1) {
+        const d0 = dataSlice[i], d1 = dataSlice[i + 1];
+        if (d0.f.includes(n - 1) && d1.f.includes(n + 1)) trendScore += 0.4;
+        if (d0.f.includes(n + 1) && d1.f.includes(n - 1)) trendScore += 0.4;
+      }
+    }
+    frontStats[n].trendScore = Math.round(trendScore * 100) / 100;
+  }
+  for (let n = 1; n <= 12; n++) {
+    let trendScore = 0;
+    for (let i = 0; i < trendLookback - 1; i++) {
+      const d0 = dataSlice[i], d1 = dataSlice[i + 1];
+      if (d0.b.includes(n - 2) && d1.b.includes(n - 1)) trendScore += 1.0;
+      if (n >= 2 && d0.b.includes(n - 1) && d1.b.includes(n)) trendScore += 0.3;
+    }
+    for (let i = 0; i < trendLookback; i++) {
+      const d = dataSlice[i];
+      if (d.b.includes(n - 1) && d.b.includes(n + 1)) trendScore += 0.8;
+      if (i < trendLookback - 1) {
+        const d0 = dataSlice[i], d1 = dataSlice[i + 1];
+        if (d0.b.includes(n - 1) && d1.b.includes(n + 1)) trendScore += 0.4;
+        if (d0.b.includes(n + 1) && d1.b.includes(n - 1)) trendScore += 0.4;
+      }
+    }
+    backStats[n].trendScore = Math.round(trendScore * 100) / 100;
+  }
+
+  // ========== 贝叶斯推断（Beta-Binomial 共轭模型） ==========
+  // 先验: Beta(α, β) where α = freq_in_all_data, β = total_all - freq_in_all_data
+  // 后验均值: E[p] = (α + freq_window) / (α + β + window_size)
+  // 使用全部数据（data）作为先验
+  const allTotal = data.length;
+  const allFrontFreq = {}, allBackFreq = {};
+  for (let n = 1; n <= 35; n++) allFrontFreq[n] = 0;
+  for (let n = 1; n <= 12; n++) allBackFreq[n] = 0;
+  for (const d of data) {
+    for (const n of d.f) allFrontFreq[n]++;
+    for (const n of d.b) allBackFreq[n]++;
+  }
+  const priorAlphaF = 1, priorBetaF = 1; // weak prior
+  const priorAlphaB = 1, priorBetaB = 1;
+
+  function calcScore(stats, total, hasConsecutive, isBack) {
+    const keys = Object.keys(stats).map(Number);
+    let maxFreq = 0, maxRecent = 0, maxConsec = 0, maxTrend = 0;
+    for (const k of keys) {
+      if (stats[k].freq > maxFreq) maxFreq = stats[k].freq;
+      if (stats[k].recent > maxRecent) maxRecent = stats[k].recent;
+      if (hasConsecutive && stats[k].consecutive > maxConsec) maxConsec = stats[k].consecutive;
+      if (stats[k].trendScore > maxTrend) maxTrend = stats[k].trendScore;
+    }
+
+    const wFreq = weights.freq / 100, wMissing = weights.missing / 100,
+          wRecent = weights.recent / 100, wSpecial = weights.special / 100,
+          wConsecutive = weights.consecutive / 100, wTrend = weights.trend / 100;
+    const allFreq = isBack ? allBackFreq : allFrontFreq;
+    const priorAlpha = isBack ? priorAlphaB : priorAlphaF;
+    const priorBeta = isBack ? priorBetaB : priorBetaF;
+
+    const scores = {};
+    for (const k of keys) {
+      const s = stats[k]; let score = 0;
+
+      // 1. 频次（贝叶斯平滑）
+      if (wFreq > 0) {
+        const bayesFreq = (allFreq[k] + s.freq) / (allTotal + total);
+        const maxBayes = (allFreq[keys[0]] + stats[keys[0]].freq) / (allTotal + total);
+        score += (bayesFreq / (maxBayes || 0.01)) * wFreq;
+      }
+
+      // 2. 遗漏回补
+      if (wMissing > 0) {
+        if (s.lastIdx >= 0) {
+          const missing = total - 1 - s.lastIdx, ratio = Math.min(missing / total, 1);
+          let ms;
+          if (missing <= 10) ms = ratio * 0.5;
+          else if (missing <= 20) ms = 0.5 + (ratio - 0.2) * 0.5;
+          else ms = 0.7 + (ratio - 0.4) * 0.5;
+          score += ms * wMissing;
+        } else { score += wMissing; }
+      }
+
+      // 3. 近期热度
+      if (maxRecent > 0 && wRecent > 0) score += (s.recent / maxRecent) * wRecent;
+
+      // 4. 特殊号码
+      if (wSpecial > 0 && !isBack) {
+        let sp = 0;
+        if (SPECIAL_NUMS.has(k)) sp += 0.6;
+        if (k <= 31) sp += 0.4;
+        score += sp * wSpecial;
+      }
+
+      // 5. 连号关联
+      if (hasConsecutive && maxConsec > 0 && wConsecutive > 0) score += (s.consecutive / maxConsec) * wConsecutive;
+
+      // 6. 走势追踪
+      if (maxTrend > 0 && wTrend > 0) score += (s.trendScore / maxTrend) * wTrend;
+
+      scores[k] = Math.round(score * 10000) / 10000;
+    }
+    return scores;
+  }
+
+  const frontScores = calcScore(frontStats, total, true, false);
+  const backScores = calcScore(backStats, total, false, true);
+  return {
+    total, frontStats, backStats, frontScores, backScores,
+    frontRanked: Object.entries(frontScores).sort((a, b) => b[1] - a[1]),
+    backRanked: Object.entries(backScores).sort((a, b) => b[1] - a[1])
+  };
+}
+
+// ========== 蒙特卡洛模拟 ==========
+function runMonteCarlo(windowSize) {
+  const slice = data.slice(0, Math.min(windowSize, data.length));
+  if (slice.length === 0) return { frontProbs: {}, backProbs: {} };
+
+  const frontFreq = {}, backFreq = {};
+  for (let n = 1; n <= 35; n++) frontFreq[n] = 0;
+  for (let n = 1; n <= 12; n++) backFreq[n] = 0;
+
+  // Build frequency distribution from the window
+  const frontWeights = [], backWeights = [];
+  for (let n = 1; n <= 35; n++) {
+    const count = slice.filter(d => d.f.includes(n)).length;
+    frontWeights.push({ n, w: count + 1 });
+  }
+  for (let n = 1; n <= 12; n++) {
+    const count = slice.filter(d => d.b.includes(n)).length;
+    backWeights.push({ n, w: count + 1 });
+  }
+
+  // Run Monte Carlo simulations
+  for (let s = 0; s < MC_SIMULATIONS; s++) {
+    // Simulate front: weighted random 5 from 35
+    const frontPool = [...frontWeights];
+    const frontPick = [];
+    for (let i = 0; i < 5; i++) {
+      const totalW = frontPool.reduce((a, b) => a + b.w, 0);
+      let r = Math.random() * totalW, cum = 0;
+      for (let j = 0; j < frontPool.length; j++) {
+        cum += frontPool[j].w;
+        if (r <= cum) { frontPick.push(frontPool[j].n); frontPool.splice(j, 1); break; }
+      }
+    }
+    for (const n of frontPick) frontFreq[n]++;
+
+    // Simulate back: weighted random 2 from 12
+    const backPool = [...backWeights];
+    const backPick = [];
+    for (let i = 0; i < 2; i++) {
+      const totalW = backPool.reduce((a, b) => a + b.w, 0);
+      let r = Math.random() * totalW, cum = 0;
+      for (let j = 0; j < backPool.length; j++) {
+        cum += backPool[j].w;
+        if (r <= cum) { backPick.push(backPool[j].n); backPool.splice(j, 1); break; }
+      }
+    }
+    for (const n of backPick) backFreq[n]++;
+  }
+
+  const frontProbs = {}, backProbs = {};
+  for (let n = 1; n <= 35; n++) frontProbs[n] = +(frontFreq[n] / MC_SIMULATIONS).toFixed(4);
+  for (let n = 1; n <= 12; n++) backProbs[n] = +(backFreq[n] / MC_SIMULATIONS).toFixed(4);
+
+  return { frontProbs, backProbs, frontRanked: Object.entries(frontProbs).sort((a, b) => b[1] - a[1]), backRanked: Object.entries(backProbs).sort((a, b) => b[1] - a[1]) };
+}
+
+function analyze() {
+  const window = data.slice(0, Math.min(ANALYSIS_WINDOW, data.length));
+  const result = analyzeWindow(window, ANALYSIS_WINDOW);
+  if (result) {
+    result.windowRange = window[0].p + ' ~ ' + window[window.length - 1].p;
+    result.dataRange = data[0].p + ' ~ ' + data[data.length - 1].p;
+  }
+  return result;
+}
+
+function analyzeAll() {
+  return analyzeWindow(data, data.length);
+}
+
+// ========== 加权随机 ==========
+function weightedSample(pool, scores, count) {
+  if (count <= 0) return []; if (count >= pool.length) return [...pool].sort((a, b) => a - b);
+  const remaining = [...pool], picked = [];
+  for (let i = 0; i < count; i++) {
+    const wts = remaining.map(n => (scores[n] || 0) + 0.01);
+    const totalW = wts.reduce((a, b) => a + b, 0);
+    let r = Math.random() * totalW, cum = 0, pickIdx = 0;
+    for (let j = 0; j < remaining.length; j++) { cum += wts[j]; if (r <= cum) { pickIdx = j; break; } }
+    picked.push(remaining[pickIdx]); remaining.splice(pickIdx, 1);
+  }
+  return picked.sort((a, b) => a - b);
+}
+
+// ========== 选号 ==========
+function selectNumbers(hotFrontCount, hotBackCount, analysisObj) {
+  if (!analysisObj) analysisObj = analysis;
+  const { frontRanked, backRanked, frontScores, backScores } = analysisObj;
+  const hotPool = frontRanked.slice(0, 12).map(e => Number(e[0]));
+  const selected = [];
+  selected.push(...weightedSample(hotPool, frontScores, hotFrontCount));
+  const remaining = []; for (let n = 1; n <= 35; n++) { if (!selected.includes(n)) remaining.push(n); }
+  selected.push(...weightedSample(remaining, frontScores, 5 - selected.length));
+  selected.sort((a, b) => a - b);
+
+  const hotBackPool = backRanked.slice(0, 5).map(e => Number(e[0]));
+  const selBack = [];
+  if (hotBackCount > 0) selBack.push(...weightedSample(hotBackPool, backScores, 1));
+  const remBack = []; for (let n = 1; n <= 12; n++) { if (!selBack.includes(n)) remBack.push(n); }
+  selBack.push(...weightedSample(remBack, backScores, 2 - selBack.length));
+  selBack.sort((a, b) => a - b);
+  return { front: selected, back: selBack };
+}
+
+// ========== UI渲染 ==========
+function renderHeatTable(tbodyId, analysis, topN, isBack) {
+  const ranked = isBack ? analysis.backRanked : analysis.frontRanked;
+  const stats = isBack ? analysis.backStats : analysis.frontStats;
+  let html = '';
+  ranked.slice(0, topN).forEach(([num, score], idx) => {
+    const n = Number(num), s = stats[n];
+    const missing = s.lastIdx >= 0 ? analysis.total - 1 - s.lastIdx : analysis.total;
+    const isHot = idx < (isBack ? 2 : 3);
+    html += '<tr' + (isHot ? ' class="hot"' : '') + '><td>' + (idx + 1) + (isHot ? '<span class="hot-badge">热门</span>' : '') + '</td><td><strong>' + String(n).padStart(2, '0') + '</strong></td><td>' + s.freq + '</td><td>' + s.recent + '</td><td>' + missing + '</td>';
+    if (!isBack) html += '<td>' + (s.consecutive || 0) + '</td><td>' + (s.trendScore || 0).toFixed(1) + '</td>';
+    html += '<td>' + score.toFixed(4) + '</td></tr>';
+  });
+  document.getElementById(tbodyId).innerHTML = html;
+}
+
+function renderAnalysis() {
+  if (!analysis) analysis = analyze();
+  const analysisAll = analyzeAll();
+
+  document.getElementById('dataRange').textContent = analysis.windowRange;
+  document.getElementById('dataCount').textContent = data.length + ' 期（分析: ' + analysis.total + ' 期）';
+  document.getElementById('expCount').textContent = data.length;
+
+  renderHeatTable('front100Body', analysis, 10, false);
+  renderHeatTable('frontAllBody', analysisAll, 10, false);
+  renderHeatTable('back100Body', analysis, 5, true);
+  renderHeatTable('backAllBody', analysisAll, 5, true);
+
+  renderLatestDraw();
+}
+
+// 最新开奖信息栏
+function renderLatestDraw() {
+  if (data.length === 0) return;
+  const latest = data[0];
+  document.getElementById('ldPeriod').textContent = '第 ' + latest.p + ' 期';
+  let ballsHTML = '';
+  latest.f.forEach(n => { ballsHTML += '<span class="ld-ball front">' + String(n).padStart(2, '0') + '</span>'; });
+  ballsHTML += '<span class="ld-divider">|</span>';
+  latest.b.forEach(n => { ballsHTML += '<span class="ld-ball back">' + String(n).padStart(2, '0') + '</span>'; });
+  document.getElementById('ldBalls').innerHTML = ballsHTML;
+  // Try to get draw_date from API response (stored in data)
+  const dateStr = latest.draw_date || '';
+  document.getElementById('ldDate').textContent = dateStr;
+}
+
+// 最近30期走势图（交互式SVG）
+function renderTrendChart() {
+  const periods = data.slice(0, 30);
+  if (periods.length === 0) { document.getElementById('trendChart').innerHTML = '<div style="text-align:center;padding:20px;color:#999">暂无数据</div>'; return; }
+
+  const ROW_H = 18, LEFT_W = 50, CELL_W = 13, GAP = 1;
+  const FRONT_COLS = 35, BACK_COLS = 12;
+  const totalW = LEFT_W + FRONT_COLS * (CELL_W + GAP) + 8 + BACK_COLS * (CELL_W + GAP) + 24;
+  const totalH = periods.length * ROW_H + 24;
+
+  let svg = '<svg width="' + totalW + '" height="' + totalH + '" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, sans-serif; font-size: 10px;">';
+  svg += '<rect width="' + totalW + '" height="' + totalH + '" fill="#fff"/>';
+
+  const frontX0 = LEFT_W;
+  const backX0 = LEFT_W + FRONT_COLS * (CELL_W + GAP) + 8;
+
+  // Column headers - clickable
+  for (let i = 0; i < FRONT_COLS; i++) {
+    const x = frontX0 + i * (CELL_W + GAP);
+    svg += '<text class="col-header" x="' + (x + CELL_W / 2) + '" y="10" text-anchor="middle" fill="#999" font-size="9" onclick="showNumDetail(' + (i + 1) + ', \'front\')" style="cursor:pointer">' + (i + 1) + '</text>';
+  }
+  svg += '<text x="' + (backX0 - 4) + '" y="10" text-anchor="middle" fill="#999" font-size="9">|</text>';
+  for (let i = 0; i < BACK_COLS; i++) {
+    const x = backX0 + i * (CELL_W + GAP);
+    svg += '<text class="b-col-header" x="' + (x + CELL_W / 2) + '" y="10" text-anchor="middle" fill="#999" font-size="9" onclick="showNumDetail(' + (i + 1) + ', \'back\')" style="cursor:pointer">' + (i + 1) + '</text>';
+  }
+  // Hint
+  svg += '<text x="' + (totalW - 12) + '" y="10" text-anchor="end" fill="#ccc" font-size="8">点击号码查看详情</text>';
+
+  // Period rows
+  for (let r = 0; r < periods.length; r++) {
+    const d = periods[r];
+    const y = 16 + r * ROW_H;
+    svg += '<text x="' + (LEFT_W - 4) + '" y="' + (y + ROW_H - 5) + '" text-anchor="end" fill="#888" font-size="9">' + d.p + '</text>';
+    for (let i = 0; i < FRONT_COLS; i++) {
+      const x = frontX0 + i * (CELL_W + GAP);
+      if (d.f.includes(i + 1)) {
+        svg += '<rect x="' + x + '" y="' + y + '" width="' + CELL_W + '" height="' + (ROW_H - 2) + '" rx="3" fill="#C41230"/>';
+        svg += '<text x="' + (x + CELL_W / 2) + '" y="' + (y + ROW_H - 5) + '" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">' + (i + 1) + '</text>';
+      }
+    }
+    for (let i = 0; i < BACK_COLS; i++) {
+      const x = backX0 + i * (CELL_W + GAP);
+      if (d.b.includes(i + 1)) {
+        svg += '<rect x="' + x + '" y="' + y + '" width="' + CELL_W + '" height="' + (ROW_H - 2) + '" rx="3" fill="#1a6fb5"/>';
+        svg += '<text x="' + (x + CELL_W / 2) + '" y="' + (y + ROW_H - 5) + '" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">' + (i + 1) + '</text>';
+      }
+    }
+  }
+
+  svg += '</svg>';
+  document.getElementById('trendChart').innerHTML = svg;
+}
+
+// ========== 号码详情弹窗（交互式走势图点击号码） ==========
+function showNumDetail(num, zone) {
+  const maxN = zone === 'front' ? 35 : 12;
+  if (num < 1 || num > maxN) return;
+  const label = zone === 'front' ? '前区' : '后区';
+
+  // Title
+  const badgeCls = zone === 'front' ? 'front' : 'back';
+  document.getElementById('ndTitle').innerHTML = '<span class="nd-badge ' + badgeCls + '">' + String(num).padStart(2, '0') + '</span> ' + label + ' 号码 ' + num + ' 详情';
+
+  // Stats
+  const analysis100 = analyze();
+  const analysisAll = analyzeAll();
+  const stats100 = zone === 'front' ? analysis100.frontStats[num] : analysis100.backStats[num];
+  const statsAll = zone === 'front' ? analysisAll.frontStats[num] : analysisAll.backStats[num];
+  const score100 = zone === 'front' ? analysis100.frontScores[num] : analysis100.backScores[num];
+  const scoreAll = zone === 'front' ? analysisAll.frontScores[num] : analysisAll.backScores[num];
+  const mc = runMonteCarlo(100);
+  const mcProb = zone === 'front' ? mc.frontProbs[num] : mc.backProbs[num];
+
+  const missing100 = stats100.lastIdx >= 0 ? analysis100.total - 1 - stats100.lastIdx : analysis100.total;
+  const missingAll = statsAll.lastIdx >= 0 ? analysisAll.total - 1 - statsAll.lastIdx : analysisAll.total;
+
+  let statsHTML = '<div class="nd-stat"><div class="nd-val">' + (zone === 'front' ? (stats100.consecutive || 0) : '-') + '</div><div class="nd-lbl">连号(近100期)</div></div>';
+  statsHTML += '<div class="nd-stat"><div class="nd-val">' + stats100.freq + '</div><div class="nd-lbl">频次(近100期)</div></div>';
+  statsHTML += '<div class="nd-stat"><div class="nd-val">' + stats100.recent + '</div><div class="nd-lbl">近10期出现</div></div>';
+  statsHTML += '<div class="nd-stat"><div class="nd-val">' + missing100 + '</div><div class="nd-lbl">遗漏(近100期)</div></div>';
+  statsHTML += '<div class="nd-stat"><div class="nd-val">' + (mcProb ? (mcProb * 100).toFixed(1) + '%' : '-') + '</div><div class="nd-lbl">蒙特卡洛概率</div></div>';
+  statsHTML += '<div class="nd-stat"><div class="nd-val">' + (score100 ? score100.toFixed(4) : '-') + '</div><div class="nd-lbl">热度分(近100期)</div></div>';
+  document.getElementById('ndStats').innerHTML = statsHTML;
+
+  // Chart 1: Missing & heat over last 30 periods
+  const periods = data.slice(0, 30);
+  const missingData = [];
+  const heatData = [];
+  const analysis = analyze();
+  const frontScores = analysis.frontScores;
+  const backScores = analysis.backScores;
+
+  for (let i = periods.length - 1; i >= 0; i--) {
+    const d = periods[i];
+    const found = zone === 'front' ? d.f.includes(num) : d.b.includes(num);
+    missingData.push(found ? 0 : 1);
+    heatData.push(zone === 'front' ? (frontScores[num] || 0) : (backScores[num] || 0));
+  }
+
+  const chart1W = 460, chart1H = 120, pad = { t: 10, r: 10, b: 20, l: 30 };
+  const plotW = chart1W - pad.l - pad.r, plotH = chart1H - pad.t - pad.b;
+  let chart1SVG = '<svg width="' + chart1W + '" height="' + chart1H + '" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, sans-serif; font-size: 9px;">';
+  chart1SVG += '<rect width="' + chart1W + '" height="' + chart1H + '" fill="#fafafa"/>';
+
+  // Y axis for missing
+  chart1SVG += '<line x1="' + pad.l + '" y1="' + pad.t + '" x2="' + pad.l + '" y2="' + (pad.t + plotH) + '" stroke="#ddd" stroke-width="1"/>';
+  chart1SVG += '<text x="' + (pad.l - 4) + '" y="' + (pad.t + 4) + '" text-anchor="end" fill="#C41230" font-size="8">1</text>';
+  chart1SVG += '<text x="' + (pad.l - 4) + '" y="' + (pad.t + plotH + 3) + '" text-anchor="end" fill="#C41230" font-size="8">0</text>';
+
+  for (let i = 0; i < missingData.length; i++) {
+    const x = pad.l + (i / (missingData.length - 1)) * plotW;
+    const y = missingData[i] ? pad.t + 2 : pad.t + plotH - 2;
+    chart1SVG += '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + (missingData[i] ? '#C41230' : '#4caf50') + '" opacity="0.8"/>';
+  }
+
+  // Heat score line
+  const maxHeat = Math.max(...heatData, 0.001);
+  let heatPath = '';
+  for (let i = 0; i < heatData.length; i++) {
+    const x = pad.l + (i / (heatData.length - 1)) * plotW;
+    const y = pad.t + plotH - (heatData[i] / maxHeat) * plotH;
+    heatPath += (i === 0 ? 'M' : 'L') + x + ',' + y + ' ';
+  }
+  chart1SVG += '<path d="' + heatPath + '" fill="none" stroke="#1a6fb5" stroke-width="1.5" opacity="0.5"/>';
+
+  chart1SVG += '</svg>';
+  document.getElementById('ndChart').innerHTML = chart1SVG;
+
+  // Chart 2: Score breakdown bar chart
+  const wFreq = weights.freq / 100, wMissing = weights.missing / 100;
+  const wRecent = weights.recent / 100, wSpecial = weights.special / 100;
+  const wConsecutive = weights.consecutive / 100, wTrend = weights.trend / 100;
+
+  const breakdown = [
+    { label: '频次', val: (stats100.freq / Math.max(analysis100.frontStats[1] ? analysis100.frontStats[1].freq : 1, 1)) * wFreq, color: '#e65100' },
+    { label: '遗漏', val: missing100 > 0 ? (Math.min(missing100 / analysis100.total, 1)) * 0.5 * wMissing : 0, color: '#ff9800' },
+    { label: '近期', val: (stats100.recent / Math.max(analysis100.frontStats[1] ? analysis100.frontStats[1].recent : 1, 1)) * wRecent, color: '#4caf50' },
+    { label: '特殊', val: zone === 'front' ? ((SPECIAL_NUMS.has(num) ? 0.6 : 0) + (num <= 31 ? 0.4 : 0)) * wSpecial : 0, color: '#9c27b0' },
+    { label: '连号', val: zone === 'front' ? ((stats100.consecutive || 0) / Math.max(analysis100.frontStats[1] ? analysis100.frontStats[1].consecutive : 1, 1)) * wConsecutive : 0, color: '#2196f3' },
+    { label: '走势', val: ((stats100.trendScore || 0) / Math.max(analysis100.frontStats[1] ? analysis100.frontStats[1].trendScore : 1, 1)) * wTrend, color: '#e91e63' }
+  ];
+
+  const barW = 420, barH = 100, barPad = { t: 5, r: 10, b: 18, l: 5 };
+  const barPlotW = barW - barPad.l - barPad.r, barPlotH = barH - barPad.t - barPad.b;
+  const barWidth = barPlotW / breakdown.length - 4;
+  let barSVG = '<svg width="' + barW + '" height="' + barH + '" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, sans-serif; font-size: 9px;">';
+  barSVG += '<rect width="' + barW + '" height="' + barH + '" fill="#fafafa"/>';
+
+  const maxVal = Math.max(...breakdown.map(b => b.val), 0.001);
+  for (let i = 0; i < breakdown.length; i++) {
+    const b = breakdown[i];
+    const x = barPad.l + i * (barPlotW / breakdown.length) + 2;
+    const h = (b.val / maxVal) * barPlotH;
+    const y = barPad.t + barPlotH - h;
+    barSVG += '<rect x="' + x + '" y="' + y + '" width="' + barWidth + '" height="' + h + '" rx="2" fill="' + b.color + '" opacity="0.8"/>';
+    barSVG += '<text x="' + (x + barWidth / 2) + '" y="' + (barPad.t + barPlotH + 12) + '" text-anchor="middle" fill="#666" font-size="9">' + b.label + '</text>';
+  }
+
+  barSVG += '</svg>';
+  document.getElementById('ndScoreBar').innerHTML = barSVG;
+
+  document.getElementById('numDetailModal').classList.add('show');
+}
+
+function closeNumDetail() {
+  document.getElementById('numDetailModal').classList.remove('show');
+}
+
+// CSV 导出（通过后端 API）
+function exportCSV() {
+  const a = document.createElement('a');
+  a.href = '/api/export';
+  a.download = 'dlt_all_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  showToast('正在下载全量数据 CSV...');
+}
+
+let lastGeneratedTickets = [];
+
+function generateTickets() {
+  if (!analysis) analysis = analyze();
+  const useAll = document.getElementById('dataSource').value === 'all';
+  const activeAnalysis = useAll ? analyzeAll() : analysis;
+  const hotFrontCount = parseInt(document.getElementById('hotFrontCount').value);
+  const hotBackCount = parseInt(document.getElementById('hotBackCount').value);
+  const ticketCount = parseInt(document.getElementById('ticketCount').value);
+  const container = document.getElementById('resultsContainer');
+  lastGeneratedTickets = [];
+
+  let html = '';
+  for (let i = 1; i <= ticketCount; i++) {
+    const hf = i === 1 ? hotFrontCount : (Math.floor(Math.random() * 3) + 1);
+    const hb = i === 1 ? hotBackCount : (Math.floor(Math.random() * 2));
+    const result = selectNumbers(hf, hb, activeAnalysis);
+    lastGeneratedTickets.push(result);
+    html += '<div class="result-card"><div class="ticket-no">第 ' + i + ' 注</div>';
+    html += '<button class="btn btn-sm btn-outline save-btn" onclick="saveTicket(' + (i - 1) + ')">保存</button>';
+    html += '<div class="balls">';
+    result.front.forEach(n => { html += '<span class="ball front">' + String(n).padStart(2, '0') + '</span>'; });
+    html += '<span class="ball-divider">|</span>';
+    result.back.forEach(n => { html += '<span class="ball back">' + String(n).padStart(2, '0') + '</span>'; });
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ========== 选号记录 ==========
+function loadHistory() { try { const s = localStorage.getItem('lotto_history'); return s ? JSON.parse(s) : []; } catch (e) { return []; } }
+function saveHistory(h) { localStorage.setItem('lotto_history', JSON.stringify(h)); }
+
+function saveTicket(idx) {
+  if (idx < 0 || idx >= lastGeneratedTickets.length) return;
+  const ticket = lastGeneratedTickets[idx];
+  const history = loadHistory();
+  history.push({ id: Date.now(), date: new Date().toLocaleString('zh-CN'), front: ticket.front, back: ticket.back, checked: false, matchFront: 0, matchBack: 0, prizeLevel: null });
+  saveHistory(history); showToast('已保存第 ' + (idx + 1) + ' 注到选号记录');
+}
+
+function clearHistory() { if (confirm('确定要清空所有选号记录吗？')) { saveHistory([]); renderHistory(); showToast('已清空'); } }
+
+function renderHistory() {
+  const history = loadHistory();
+  const container = document.getElementById('historyContainer');
+  const clearWrap = document.getElementById('clearHistoryWrap');
+  if (history.length === 0) { container.innerHTML = '<div class="history-empty">暂无选号记录<br><small>在「智能选号」中生成号码后点击「保存」即可记录</small></div>'; clearWrap.hidden = true; return; }
+  clearWrap.hidden = false;
+  let html = '';
+  for (let i = history.length - 1; i >= 0; i--) {
+    const h = history[i];
+    html += '<div class="history-item"><div class="hi-header"><span class="hi-date">' + h.date + '</span><div class="hi-actions"><button class="btn btn-xs btn-outline" onclick="openCheckModal(' + i + ')">核对</button><button class="btn btn-xs btn-danger" onclick="deleteHistoryItem(' + i + ')">删除</button></div></div>';
+    html += '<div class="hi-balls">';
+    h.front.forEach(n => { const cls = h.checked ? (h.matchFrontSet && h.matchFrontSet.includes(n) ? 'hi-ball front hit' : 'hi-ball front miss') : 'hi-ball front'; html += '<span class="' + cls + '">' + String(n).padStart(2, '0') + '</span>'; });
+    html += '<span class="ball-divider">|</span>';
+    h.back.forEach(n => { const cls = h.checked ? (h.matchBackSet && h.matchBackSet.includes(n) ? 'hi-ball back hit' : 'hi-ball back miss') : 'hi-ball back'; html += '<span class="' + cls + '">' + String(n).padStart(2, '0') + '</span>'; });
+    html += '</div>';
+    if (h.checked) { const prize = getPrizeLevel(h.matchFront, h.matchBack); const isWin = prize !== '未中奖'; html += '<div class="hi-result ' + (isWin ? 'win' : 'lose') + '">核对结果：前区中 ' + h.matchFront + ' 个，后区中 ' + h.matchBack + ' 个 → ' + prize + '</div>'; }
+    else { html += '<div class="hi-result lose" style="font-size:12px">尚未核对</div>'; }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+// ========== 核对 ==========
+let checkingHistoryIdx = -1;
+
+function openCheckModal(idx) { checkingHistoryIdx = idx; const h = loadHistory()[idx]; document.getElementById('checkHint').textContent = '记录日期：' + h.date; document.getElementById('checkFront').value = ''; document.getElementById('checkBack').value = ''; document.getElementById('checkModal').classList.add('show'); }
+function closeCheckModal() { document.getElementById('checkModal').classList.remove('show'); checkingHistoryIdx = -1; }
+
+function doCheck() {
+  const frontStr = document.getElementById('checkFront').value.trim();
+  const backStr = document.getElementById('checkBack').value.trim();
+  const frontParts = frontStr.split(/\s+/).map(Number).filter(n => n >= 1 && n <= 35);
+  const backParts = backStr.split(/\s+/).map(Number).filter(n => n >= 1 && n <= 12);
+  if (frontParts.length !== 5 || backParts.length !== 2) { showToast('请输入正确格式（前区5个，后区2个）'); return; }
+
+  const history = loadHistory();
+  const h = history[checkingHistoryIdx];
+  const frontSet = new Set(frontParts), backSet = new Set(backParts);
+  let matchFront = 0, matchBack = 0;
+  const matchFrontSet = [], matchBackSet = [];
+  for (const n of h.front) { if (frontSet.has(n)) { matchFront++; matchFrontSet.push(n); } }
+  for (const n of h.back) { if (backSet.has(n)) { matchBack++; matchBackSet.push(n); } }
+
+  h.checked = true; h.matchFront = matchFront; h.matchBack = matchBack; h.matchFrontSet = matchFrontSet; h.matchBackSet = matchBackSet;
+  h.prizeLevel = getPrizeLevel(matchFront, matchBack);
+  saveHistory(history); closeCheckModal(); renderHistory();
+  showToast('核对完成：前区中 ' + matchFront + ' 个，后区中 ' + matchBack + ' 个');
+}
+
+function getPrizeLevel(front, back) {
+  if (front === 5 && back === 2) return '一等奖';
+  if (front === 5 && back === 1) return '二等奖';
+  if (front === 5 && back === 0) return '三等奖';
+  if (front === 4 && back === 2) return '四等奖';
+  if (front === 4 && back === 1) return '五等奖';
+  if (front === 3 && back === 2) return '六等奖';
+  if (front === 4 && back === 0) return '七等奖';
+  if ((front === 3 && back === 1) || (front === 2 && back === 2)) return '八等奖';
+  if ((front === 3 && back === 0) || (front === 1 && back === 2) || (front === 2 && back === 1) || (front === 0 && back === 2)) return '九等奖';
+  return '未中奖';
+}
+
+function deleteHistoryItem(idx) { const history = loadHistory(); history.splice(idx, 1); saveHistory(history); renderHistory(); showToast('已删除'); }
+
+// ========== Tab切换 ==========
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const tabMap = { trend: 0, analysis: 1, weights: 2, selection: 3, history: 4 };
+  const idx = tabMap[tabName] || 0;
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  if (tabName === 'trend') { document.getElementById('trendPanel').classList.add('active'); renderTrendChart(); }
+  else if (tabName === 'weights') { document.getElementById('weightsPanel').classList.add('active'); renderWeightSliders(); updateWeightFormula(); }
+  else if (tabName === 'selection') { document.getElementById('selectionPanel').classList.add('active'); }
+  else if (tabName === 'history') { document.getElementById('historyPanel').classList.add('active'); renderHistory(); }
+  else { document.getElementById('analysisPanel').classList.add('active'); renderAnalysis(); }
+}
+
+// ========== 数据获取（通过后端 API） ==========
+
+async function fetchData() {
+  try {
+    const resp = await fetch('/api/data');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const json = await resp.json();
+    data = json.records.map(r => ({ p: r.period, f: r.front, b: r.back, draw_date: r.draw_date }));
+    return data.length;
+  } catch (e) {
+    console.error('Fetch data error:', e);
+    return 0;
+  }
+}
+
+async function refreshData(silent) {
+  const btn = document.getElementById('refreshBtn');
+  const hint = document.getElementById('refreshHint');
+  hint.style.display = 'none';
+  if (!silent) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 抓取中...'; }
+
+  try {
+    const resp = await fetch('/api/refresh', { method: 'POST' });
+    const result = await resp.json();
+    if (result.ok) {
+      await fetchData();
+      analysis = null; analysis = analyze();
+      renderAnalysis();
+      document.getElementById('resultsContainer').innerHTML = '';
+      if (!silent) {
+        const msg = result.added > 0
+          ? '新增 ' + result.added + ' 期，共 ' + result.total + ' 期（最新: ' + result.latest + '）'
+          : '已是最新，共 ' + result.total + ' 期（最新: ' + result.latest + '）';
+        showToast(msg);
+      }
+    } else {
+      throw new Error(result.error || 'API error');
+    }
+  } catch (e) {
+    console.error('Refresh error:', e);
+    if (!silent) {
+      hint.style.display = 'block';
+      showToast('刷新失败，请确保后端服务已启动');
+    }
+  }
+
+  if (!silent) { btn.disabled = false; btn.innerHTML = '刷新数据'; }
+}
+
+function showToast(msg) { const toast = document.getElementById('toast'); toast.textContent = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500); }
+
+// ========== 初始化 ==========
+(async function init() {
+  await fetchData();
+  if (data.length > 0) {
+    analysis = analyze();
+    renderAnalysis();
+    renderTrendChart();
+    updateWeightFormula();
+  }
+  refreshData(true);
+})();
+</script>
+</body>
+</html>
+
+
