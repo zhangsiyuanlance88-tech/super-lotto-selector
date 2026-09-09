@@ -184,7 +184,7 @@ footer { text-align: center; padding: 20px; font-size: 12px; color: #aaa; line-h
 <div class="latest-draw" id="latestDraw"><span class="ld-label">最新开奖</span><span class="ld-period" id="ldPeriod">--</span><span class="ld-balls" id="ldBalls"></span><span class="ld-date" id="ldDate"></span></div>
 <div class="status-bar"><div class="info">数据范围：<strong id="dataRange">--</strong>（<strong id="dataCount">0</strong> 期）</div><button class="btn btn-outline btn-sm" onclick="refreshData()" id="refreshBtn">刷新数据</button></div>
 <div class="export-bar" id="exportBar"><span class="exp-label">全量数据：<strong id="expCount">0</strong> 期</span><button class="btn btn-outline btn-sm" onclick="exportCSV()">导出 CSV</button></div>
-<div class="refresh-hint" id="refreshHint">后端服务未连接，请先启动 server.ps1</div>
+<div class="refresh-hint" id="refreshHint">网络刷新失败，当前使用内置数据。请稍后重试。</div>
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('trend')">走势图</button>
@@ -1150,40 +1150,6 @@ async function refreshData(silent) {
     if (!silent) showToast('刷新失败，请检查网络后重试');
     hint.style.display = 'block';
   }
-  if (!silent) { btn.disabled = false; btn.innerHTML = '刷新数据'; }
-}
-
-async function refreshData(silent) {
-  const btn = document.getElementById('refreshBtn');
-  const hint = document.getElementById('refreshHint');
-  hint.style.display = 'none';
-  if (!silent) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 抓取中...'; }
-
-  try {
-    const resp = await fetch('/api/refresh', { method: 'POST' });
-    const result = await resp.json();
-    if (result.ok) {
-      await fetchData();
-      analysis = null; analysis = analyze();
-      renderAnalysis();
-      document.getElementById('resultsContainer').innerHTML = '';
-      if (!silent) {
-        const msg = result.added > 0
-          ? '新增 ' + result.added + ' 期，共 ' + result.total + ' 期（最新: ' + result.latest + '）'
-          : '已是最新，共 ' + result.total + ' 期（最新: ' + result.latest + '）';
-        showToast(msg);
-      }
-    } else {
-      throw new Error(result.error || 'API error');
-    }
-  } catch (e) {
-    console.error('Refresh error:', e);
-    if (!silent) {
-      hint.style.display = 'block';
-      showToast('刷新失败，请确保后端服务已启动');
-    }
-  }
-
   if (!silent) { btn.disabled = false; btn.innerHTML = '刷新数据'; }
 }
 
